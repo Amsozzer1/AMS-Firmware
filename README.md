@@ -108,6 +108,13 @@ it.
 
 ## Build
 
+The four values that describe your bench — Wi-Fi, and where the broker is — are not
+tracked, so write them once before the first build:
+
+```bash
+cp include/secrets.example.h include/secrets.h
+```
+
 ```bash
 pio run                 # build
 pio run -t upload       # flash
@@ -149,8 +156,10 @@ Running on hardware, with three things still open:
 - **The per-module filament sensor is not read yet.** `Module::sensedFilament()` returns
   `false`, so today only the printer's sensor ends a move and the first leg is a timer
   rather than a real health check. The pin is already configured and pulled up.
-- **Wi-Fi credentials and the broker address are compile-time constants** in
-  `constants.h`. They belong in a build flag or NVS.
+- **Wi-Fi credentials and the broker address are still compile-time constants**, now in
+  an untracked `secrets.h`. Keeping them out of git is not the same as provisioning: they
+  are baked into the image, so moving the board to another network means a rebuild. They
+  belong in NVS.
 - **Travel-time anomaly detection.** The time between the two sensors is a running
   average away from catching a grind before it becomes a jam.
 
