@@ -9,6 +9,10 @@ One ESP32 drives a cluster of up to eight spool modules over a shared step/dir b
 server picks *which* spool. The firmware owns everything after that: the stepper, the
 sensors, the timeouts, and saying so when a move does not finish.
 
+[One ESP32, eight spools, two legs per filament move](https://amsozzer.com/writing/a-filament-move-is-two-legs)
+is the write-up for this firmware: why a move is split in two, how the MQTT connection
+survives a multi-second load, and what the shared step bus buys.
+
 The server side is [Amsozzer1/AMS](https://github.com/Amsozzer1/AMS), and
 [Driving a Bambu Lab printer over MQTT](https://amsozzer.com/writing/driving-a-bambu-lab-printer-over-mqtt)
 covers how the printer's half of the protocol was worked out.
@@ -153,9 +157,12 @@ into a void.
 
 Running on hardware, with three things still open:
 
-- **The per-module filament sensor is not read yet.** `Module::sensedFilament()` returns
-  `false`, so today only the printer's sensor ends a move and the first leg is a timer
-  rather than a real health check. The pin is already configured and pulled up.
+- **The per-module filament sensor is not read yet, and unloading does not work because of
+  it.** `Module::sensedFilament()` returns `false`. On a load that only means the first leg
+  is a timer rather than a real check, because the printer's sensor still ends the move. On
+  an unload `arrived()` is `!sensedFilament()`, which is `true` the first time `tick()`
+  evaluates it — so `stop()` runs before `pulse()` ever does and the motor never turns. The
+  pin is configured and pulled up; nothing reads it.
 - **Wi-Fi credentials and the broker address are still compile-time constants**, now in
   an untracked `secrets.h`. Keeping them out of git is not the same as provisioning: they
   are baked into the image, so moving the board to another network means a rebuild. They
